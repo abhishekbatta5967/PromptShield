@@ -1,5 +1,8 @@
 import streamlit as st
+from streamlit_option_menu import option_menu
 from detection.classifier import hybrid_threat_analysis
+from utils.logger import save_attack_log
+from dashboard.charts import load_logs, severity_chart, threat_type_chart
 
 st.set_page_config(
     page_title="PromptShield",
@@ -7,62 +10,179 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("PromptShield")
-st.subheader("LLM Prompt Threat Detection System")
+st.markdown(
+    """
+    <style>
 
-st.markdown("---")
+    .main {
+        background-color: #0E1117;
+        color: white;
+    }
 
-user_prompt = st.text_area("Enter your prompt here:", height=200, placeholder="Type your prompt here...")
+    .stTextArea textarea {
+        background-color: #1E1E1E;
+        color: white;
+        border-radius: 10px;
+    }
 
-if st.button("Analyze Prompt"):
+    .stButton button {
+        background-color: #ff4b4b;
+        color: white;
+        border-radius: 10px;
+        height: 3em;
+        width: 100%;
+        font-size: 16px;
+    }
 
-    if user_prompt.strip() == "":
-        st.warning("Please enter a prompt.")
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+with st.sidebar:
+
+    st.title("🛡️ PromptShield")
+    st.subheader("LLM Prompt Threat Detection System")
+
+
+    selected = option_menu(
+        menu_title="Navigation",
+        options=["Threat Analyzer", "Analytics Dashboard"],
+        icons=["shield-fill", "bar-chart-fill"],
+        default_index=0
+    )
+
+if selected == "Threat Analyzer":
+
+    st.title("Prompt Threat Analyzer")
+    st.markdown("---")
+
+    user_prompt = st.text_area("Enter your prompt here:", height=200, placeholder="Type your prompt here...")
+
+    if st.button("Analyze Prompt"):
+
+        if user_prompt.strip() == "":
+            st.warning("Please enter a prompt.")
+
+        else:
+            with st.spinner("Analyzing prompt..."):
+                result = hybrid_threat_analysis(user_prompt)
+                save_attack_log(user_prompt, result)
+
+            st.markdown("### Analysis Result")
+
+            if not result["threat_detected"]:
+                st.success("✅ Prompt Appears Safe")
+            
+            else:
+                st.error("⚠️ Threat Detected")
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.metric("Risk Score", result["final_risk_score"], delta=None)
+
+                with col2:
+                    st.metric("Severity", result["final_severity"], delta=None)
+            
+
+                st.markdown("---")
+
+                st.subheader("Detected Threat Types")
+
+                st.warning(result["llm_threat_type"])
+                        
+                st.subheader("Detected Threat Categories")
+
+                if result["detected_threats"]:
+                    for threat in result["detected_threats"]:
+                        st.error(threat)
+
+                else:
+                    st.info("No rule-based threats detected.")
+
+                st.markdown("---")
+
+                st.subheader("Threat Explanation")
+
+                st.write(result["explanation"])
+
+                st.markdown("---")
+
+                st.subheader("Safe Rewrite Suggestion")
+                st.info(result["safe_rewrite"])
+
+                st.markdown("---")
+
+                report = f"""
+                PROMPTSHIELD SECURITY REPORT
+
+                Prompt:
+                {user_prompt}
+
+                Threat Type:
+                {result['llm_threat_type']}
+
+                Risk Score:
+                {result['final_risk_score']}
+
+                Severity:
+                {result['final_severity']}
+
+                Explanation:
+                {result['explanation']}
+
+                Safe Rewrite:
+                {result['safe_rewrite']}"""
+                
+                st.download_button(
+                    label="Download Security Report",
+                    data=report,
+                    file_name="promptshield_report.txt",
+                    mime="text/plain"
+                )
+
+elif selected == "Analytics Dashboard":
+
+    st.title("Analytics Dashboard")
+    st.markdown("---")
+
+    df = load_logs()
+    df.index = df.index + 1
+
+    if df.empty:
+        st.info("No attack logs found.")
 
     else:
-        with st.spinner("Analyzing prompt..."):
-            result = hybrid_threat_analysis(user_prompt)
+        total_scans = len(df)
+        threats_detected = df[df["threat_detected"] == True].shape[0]
+        avg_risk = round(df["risk_score"].mean(), 2)
 
-        st.markdown("### Analysis Result")
+        col1, col2, col3 = st.columns(3)
 
-        if not result["threat_detected"]:
-            st.success("✅ Prompt Appears Safe")
-        
-        else:
-            st.error("⚠️ Threat Detected")
+        with col1:
+            st.metric("Total Scans", total_scans)
 
-            col1, col2 = st.columns(2)
+        with col2:
+            st.metric("Threats Detected", threats_detected)
 
-            with col1:
-                st.metric("Risk Score", result["final_risk_score"], delta=None)
+        with col3:
+            st.metric("Average Risk Score", avg_risk)
 
-            with col2:
-                st.metric("Severity", result["final_severity"], delta=None)
-        
+        st.markdown("---")
 
-            st.markdown("---")
+        # Charts
+        severity_fig = severity_chart(df)
+        threat_fig = threat_type_chart(df)
 
-            st.subheader("Detected Threat Types")
+        if severity_fig:
+            st.plotly_chart(severity_fig, use_container_width=True)
 
-            st.warning(result["detected_threats"])
-                    
-            st.subheader("Detected Threat Categories")
+        if threat_fig:
+            st.plotly_chart(threat_fig, use_container_width=True)
 
-            if result["detected_threats"]:
+        st.markdown("---")
 
-                for threat in result["detected_threats"]:
-                    st.error(threat)
+        st.subheader("Recent Threat Logs")
 
-            else:
-                st.info("No rule-based threats detected.")
-
-            st.markdown("---")
-
-            st.subheader("Threat Explanation")
-
-            st.write(result["explanation"])
-
-            st.markdown("---")
-
-            st.subheader("Safe Rewrite Suggestion")
-            st.info(result["safe_rewrite"])
+        st.dataframe(df.tail(10), use_container_width=True)
