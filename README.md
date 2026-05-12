@@ -13,7 +13,7 @@ The system combines rule-based threat detection with Google Gemini AI to provide
 > Deployed Streamlit link 
 
 ```text
-Deployment coming soon.
+https://abpromptshield.streamlit.app/
 ```
 
 ---
@@ -155,7 +155,7 @@ PromptShield/
 
 ## GitHub Repository
 
-Repository will be uploaded soon.
+(https://github.com/abhishekbatta5967/PromptShield.git)
 
 # Installation & Setup
 
