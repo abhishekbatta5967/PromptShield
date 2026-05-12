@@ -49,14 +49,28 @@ def threat_type_chart(df):
 def create_efficiency_chart(score):
 
     fig = go.Figure(data=[go.Pie(
-        labels=["Efficiency Score", "Remaining"],
+        labels=["Efficiency Score"],
         values=[score, 100 - score],
         hole=0.7,
+        textinfo="none",
         marker_colors=["#4CAF50", "#E0E0E0"]
     )])
 
     fig.update_layout(
-        title="Prompt Efficiency Score",
-        height=400
+
+        title=f"Prompt Efficiency Score",
+
+        showlegend=False,
+
+        height=350,
+
+        annotations=[dict(
+            text=f"{score}%",
+            x=0.5,
+            y=0.5,
+            font_size=30,
+            showarrow=False
+        )]
     )
+
     return fig

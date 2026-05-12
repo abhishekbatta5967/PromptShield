@@ -7,7 +7,7 @@ def hybrid_threat_analysis(user_prompt):
     rule_result = rule_based_detection(user_prompt)
     llm_result = analyze_prompt(user_prompt)
 
-    llm_score = llm_result.get("risk_score", 0)
+    llm_score = llm_result.get("risk_score", 40)
 
     try:
         llm_score = int(llm_score)

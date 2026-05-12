@@ -3,6 +3,7 @@ from google import genai
 from dotenv import load_dotenv
 import os
 
+
 load_dotenv()
 
 api_key = os.getenv("GEMINI_API_KEY")
@@ -53,7 +54,26 @@ def analyze_prompt_efficiency(user_prompt):
         cleaned_response = cleaned_response.replace("```json", "")
         cleaned_response = cleaned_response.replace("```", "")
 
-        parsed_response = json.loads(cleaned_response)
+        try:
+
+            parsed_response = json.loads(
+                cleaned_response
+            )
+
+        except:
+
+            parsed_response = {
+                "efficiency_score": 50,
+                "clarity": 50,
+                "specificity": 50,
+                "structure": 50,
+                "context_quality": 50,
+                "goal_definition": 50,
+                "suggestions": [
+                    "AI optimization parsing failed."
+                ],
+                "optimized_prompt": user_prompt
+            }
 
         return parsed_response
     
@@ -69,3 +89,4 @@ def analyze_prompt_efficiency(user_prompt):
             "suggestions": [f"Prompt optimization failed: {str(e)}"],
             "optimized_prompt": ("This prompt could not be optimized due to an error. Please review the prompt for potential improvements.")
         }
+    

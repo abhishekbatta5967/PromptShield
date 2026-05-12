@@ -2,6 +2,7 @@ import os
 import json
 from google import genai
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 
@@ -44,40 +45,63 @@ def analyze_prompt(user_prompt):
 
     USER PROMPT:{user_prompt}"""
 
+    MAX_RETRIES = 3
 
-    try:
-        response = client.models.generate_content(
-            model = "gemini-2.5-flash",
-            contents=system_prompt
-        )
-        
-        cleaned_response = response.text.strip()
+    for attempt in range(MAX_RETRIES):
 
-        cleaned_response = cleaned_response.replace("```json", "")
-        cleaned_response = cleaned_response.replace("```", "")
-
-        parsed_response = json.loads(cleaned_response)
-
-        parsed_response["risk_score"] = int(parsed_response.get("risk_score", 0))
-
-        safe_rewrite = parsed_response.get("safe_rewrite", "").strip()
-
-        if not safe_rewrite:
-            safe_rewrite = (
-                "This prompt directly violates security policies and cannot be safely rewritten."
+        try:
+            response = client.models.generate_content(
+                model = "gemini-2.5-flash",
+                contents=system_prompt
             )
+            
+            cleaned_response = response.text.strip()
 
-        parsed_response["safe_rewrite"] = safe_rewrite
+            cleaned_response = cleaned_response.replace("```json", "")
+            cleaned_response = cleaned_response.replace("```", "")
 
-        return parsed_response
+            parsed_response = json.loads(cleaned_response)
+
+            parsed_response["risk_score"] = int(parsed_response.get("risk_score", 0))
+
+            safe_rewrite = parsed_response.get("safe_rewrite", "").strip()
+
+            if not safe_rewrite:
+                safe_rewrite = (
+                    "This prompt directly violates security policies and cannot be safely rewritten."
+                )
+
+            parsed_response["safe_rewrite"] = safe_rewrite
+
+            return parsed_response
     
-    except Exception as e:
+        except Exception as e:
 
-        return {
-            "threat_detected": None,
-            "threat_type": "LLM Analysis Failed",
-            "severity": "Unknown",
-            "risk_score": 40,
-            "explanation": f"Gemini analysis failed: {str(e)}",
-            "safe_rewrite": ("This prompt could not be analyzed due to an error. Please review the prompt for potential risks.")
-        }
+            error_message = str(e)
+
+            if "503" in error_message:
+                time.sleep(2)
+                continue
+
+            return {
+                "threat_detected": None,
+                "threat_type": "LLM Analysis Failed",
+                "severity": "Unknown",
+                "risk_score": 40,
+                "explanation": (f"Gemini analysis failed: "f"{error_message}"),
+                "safe_rewrite": ("This prompt could not be analyzed due to an error. Please review the prompt for potential risks.")
+            }
+        
+    return {
+    "threat_detected": None,
+    "threat_type": "Gemini Overloaded",
+    "severity": "Unknown",
+    "risk_score": 40,
+    "explanation": (
+        "Gemini API temporarily unavailable "
+        "due to high demand."
+    ),
+    "safe_rewrite": (
+        "Please retry analysis later."
+    )
+}
