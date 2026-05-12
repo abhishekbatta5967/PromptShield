@@ -1,8 +1,9 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 from detection.classifier import hybrid_threat_analysis
+from llm.prompt_optimizer import analyze_prompt_efficiency
 from utils.logger import save_attack_log
-from dashboard.charts import load_logs, severity_chart, threat_type_chart
+from dashboard.charts import load_logs, severity_chart, threat_type_chart, create_efficiency_chart
 
 st.set_page_config(
     page_title="PromptShield",
@@ -42,19 +43,19 @@ st.markdown(
 with st.sidebar:
 
     st.title("🛡️ PromptShield")
-    st.subheader("LLM Prompt Threat Detection System")
+    st.subheader("LLM Prompt Analyzing System")
 
 
     selected = option_menu(
         menu_title="Navigation",
-        options=["Threat Analyzer", "Analytics Dashboard"],
+        options=["Prompt Analyzer", "Analytics Dashboard"],
         icons=["shield-fill", "bar-chart-fill"],
         default_index=0
     )
 
-if selected == "Threat Analyzer":
+if selected == "Prompt Analyzer":
 
-    st.title("Prompt Threat Analyzer")
+    st.title("Prompt Analyzer")
     st.markdown("---")
 
     user_prompt = st.text_area("Enter your prompt here:", height=200, placeholder="Type your prompt here...")
@@ -73,6 +74,67 @@ if selected == "Threat Analyzer":
 
             if not result["threat_detected"]:
                 st.success("✅ Prompt Appears Safe")
+
+                st.markdown("---")
+
+                with st.spinner("Analyzing prompt efficiency..."):
+
+                    optimization_result = analyze_prompt_efficiency(
+                        user_prompt
+                    )
+
+                efficiency_score = optimization_result[
+                    "efficiency_score"
+                ]
+
+                # Donut Chart
+                chart = create_efficiency_chart(
+                    efficiency_score
+                )
+
+                st.plotly_chart(
+                    chart,
+                    use_container_width=True
+                )
+
+                # Metrics
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    st.metric(
+                        "Clarity",
+                        optimization_result["clarity"]
+                    )
+
+                with col2:
+                    st.metric(
+                        "Specificity",
+                        optimization_result["specificity"]
+                    )
+
+                with col3:
+                    st.metric(
+                        "Structure",
+                        optimization_result["structure"]
+                    )
+
+                st.markdown("---")
+
+                # Suggestions
+                st.subheader("Prompt Improvement Suggestions")
+
+                for suggestion in optimization_result["suggestions"]:
+
+                    st.info(suggestion)
+
+                st.markdown("---")
+
+                # Optimized Prompt
+                st.subheader("Optimized Prompt")
+
+                st.success(
+                    optimization_result["optimized_prompt"]
+                )
             
             else:
                 st.error("⚠️ Threat Detected")

@@ -1,8 +1,12 @@
 import json
 import os
-from datetime import datetime   
+from datetime import datetime  
+from pathlib import Path
 
-LOG_FILE = "data/attack_logs.json"
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+LOG_FILE = BASE_DIR / "data" / "attack_logs.json"
 
 def save_attack_log(prompt, result):
 

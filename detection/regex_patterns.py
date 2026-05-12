@@ -6,6 +6,13 @@ PATTERNS = {
         r"forget your rules",
         r"override system prompt",
         r"bypass restrictions",
+        r"stop following previous directions",
+        r"disobey prior instructions",
+        r"forget earlier commands",
+        r"provide confidential information",
+        r"internal configuration",
+        r"hidden credentials",
+        r"ignore safeguards",
     ],
 
     "Jailbreak Attempt": [
@@ -15,6 +22,9 @@ PATTERNS = {
         r"no ethical limitations",
         r"pretend to be evil",
         r"simulate illegal activity",
+        r"admin access",
+        r"disable safety",
+        r"simulate harmful behavior",
     ],
 
     "Prompt Leakage": [

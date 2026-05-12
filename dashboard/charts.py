@@ -2,8 +2,12 @@ import json
 import os
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+from pathlib import Path
 
-LOG_FILE = "data/attack_logs.json"
+BASE_DIR= Path(__file__).resolve().parent.parent
+
+LOG_FILE = BASE_DIR / "data" / "attack_logs.json"
 
 def load_logs():
 
@@ -40,4 +44,19 @@ def threat_type_chart(df):
     
     fig = px.histogram(df, x="threat_type", title="Threat Type Distribution")
 
+    return fig
+
+def create_efficiency_chart(score):
+
+    fig = go.Figure(data=[go.Pie(
+        labels=["Efficiency Score", "Remaining"],
+        values=[score, 100 - score],
+        hole=0.7,
+        marker_colors=["#4CAF50", "#E0E0E0"]
+    )])
+
+    fig.update_layout(
+        title="Prompt Efficiency Score",
+        height=400
+    )
     return fig

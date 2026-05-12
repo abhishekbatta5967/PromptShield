@@ -1,12 +1,29 @@
 import re
 from detection.regex_patterns import PATTERNS
 
+SUSPICIOUS_KEYWORDS = [
+    "ignore",
+    "bypass",
+    "override",
+    "reveal",
+    "hidden",
+    "admin",
+    "credentials",
+    "hack",
+    "malware",
+    "phishing"
+]
+
 def rule_based_detection(prompt):
 
     detected_threats = []
     risk_score = 0
 
     prompt_lower = prompt.lower()
+
+    for keyword in SUSPICIOUS_KEYWORDS:
+        if keyword in prompt_lower:
+            risk_score += 5
 
     for category, patterns in PATTERNS.items():
 

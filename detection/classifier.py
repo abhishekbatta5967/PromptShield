@@ -12,13 +12,18 @@ def hybrid_threat_analysis(user_prompt):
     try:
         llm_score = int(llm_score)
     except:
-        llm_score = 0
+        llm_score = 40
 
-    combined_score = (
-        rule_result["risk_score"] + llm_score
-    ) // 2
+    combined_score = min(100, int(rule_result["risk_score"] * 0.6) + int(llm_score * 0.4))
 
     final_severity = get_severity(combined_score)
+    
+    rule_based_detected = rule_result["risk_score"] >=30
+
+    llm_detected = (llm_result.get("threat_detected") is True)
+
+    score_detected = combined_score >= 35
+    final_threat_detected = (rule_based_detected or llm_detected or score_detected)
 
     return {
         "detected_threats": rule_result["detected_threats"],
@@ -32,5 +37,5 @@ def hybrid_threat_analysis(user_prompt):
 
         "safe_rewrite": llm_result.get("safe_rewrite"),
 
-        "threat_detected": llm_result.get("threat_detected")
+        "threat_detected": final_threat_detected
     }
